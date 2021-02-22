@@ -1,4 +1,4 @@
-# s(CASP)AT
+# Explainable Argumentation Theory for Defeasibility in Legal Knowledge Representation in s(CASP)
 
 An implementation of Logic Programming with Defaults and Argumentation Theories in s(CASP).
 
@@ -15,7 +15,7 @@ Wan H., Grosof B., Kifer M., Fodor P., Liang S. (2009) Logic Programming with De
 
 ## What is this for?
 
-s(CASP) allows you to write rules that are exceptions to other rules, as follows:
+s(CASP) by itself allows you to write rules that are exceptions to other rules, as follows:
 
 ```
 flies(X) :- bird(X), not -flies(X).
@@ -30,9 +30,11 @@ penguin(tweety).
 ?- -flies(tweety). % returns true.
 ```
 
-The two advantages that using argumentation theory adds to this capability are the ability to
-choose an argumentation theory in a modular way, and the ability to specify exceptions at
-whatever location in your code you might like.
+Argumentation theory is another way to achieve defeasibility that gets you two advantages: the ability to
+choose an argumentation theory for your ruleset in a modular way, and the ability to specify exceptions at
+whatever location in your code you prefer, instead of being forced to place them in the conditions of the defeated rule.
+
+## Usage
 
 The interface to the argumentation theory is three predicates:
 
@@ -75,14 +77,72 @@ penguin(tweety).
 ?- holds(penguin,-flies(tweety)). % success
 ```
 
-In addition to being able to change the argumentation theory in one place instead of needing
-to change it anywhere an exception is stated, this also gives you the ability to express
-the defeasibility relationship wherever in the code it is represented in your source materials.
+Legal materials that say "subject to" can have the `override` statement placed with the default rule,
+and legal materials that say "despite" can have the `override` statement placed with the exception to the default rule.
+This eliminates reformulation of default rules to include their exceptions in the conditions which makes legal rules easier to encode one at a time. It also simplifies code maintenance when rules change
+by better maintaining the one-to-one relationship between source materials and code.
 
-Legal materials that say "subject to" can have the `override` statement placed with the default,
-and legal materials that say "despite" can have the `override` statement placed with the exception.
-This eliminating reformulation of rules to include their exceptions, and simplifies maintenance
-by maintaining a one-to-one relationship between source materials and code.
+## Explainable
+
+Because s(CASP) generates human-readable explanations, the defeasibility
+relationships between your rules can be easily seen and used to explain the conclusions of the tool.
+
+
+## Example Output
+
+If the above code is run with the question `?- not holds(flies(tweety)).` and the command
+`scasp lpdat_test.pl --human --tree --pos` you should get the following:
+
+```
+QUERY:I would like to know if
+     there is no evidence that the conclusion flies(tweety) from rule default ultimately holds.
+
+        ANSWER: 1 (in 4.535 ms)
+
+JUSTIFICATION_TREE:
+according to default, tweety flies, because
+    tweety is a bird, because
+        tweety is a penguin.
+the conclusion flies(tweety) from rule default is defeated, because
+    the conclusion flies(tweety) from rule default conflicts with the conclusion -flies(tweety) from rule penguin, and
+    the conclusion flies(tweety) from rule default is defeated by refutation by the conclusion -flies(tweety) from rule default, because
+        the conclusion flies(tweety) from rule default is refuted by the conclusion -flies(tweety) from rule penguin, because
+            the conclusion flies(tweety) from rule default conflicts with the conclusion -flies(tweety) from rule penguin, justified above, and
+            the conclusion -flies(tweety) from rule penguin overrides the conclusion flies(tweety) from rule default, and
+            according to default, tweety flies, justified above, and
+            according to penguin, tweety does not fly, because
+                tweety is a penguin, justified above.
+The global constraints hold.
+
+MODEL:
+{ not holds(default,flies(tweety)),  according_to(default,flies(tweety)),  bird(tweety),  penguin(tweety),  defeated(default,flies(tweety)),  opposes(default,flies(tweety),penguin,-flies(tweety)),  defeated_by_refutation(default,flies(tweety),penguin,-flies(tweety)),  refuted_by(default,flies(tweety),penguin,-flies(tweety)),  overrides(penguin,-flies(tweety),default,flies(tweety)),  according_to(penguin,-flies(tweety)) }
+```
+
+If you change the query to `?- holds(X,Y).`, you will get one model:
+
+```
+QUERY:I would like to know if
+     the conclusion B from rule A ultimately holds.
+
+        ANSWER: 1 (in 51.537 ms)
+
+JUSTIFICATION_TREE:
+the conclusion -flies(tweety) from rule penguin ultimately holds, because
+    according to penguin, tweety does not fly, because
+        tweety is a penguin.
+The global constraints hold.
+
+MODEL:
+{ holds(penguin,-flies(tweety)),  according_to(penguin,-flies(tweety)),  penguin(tweety),  not defeated(penguin,-flies(tweety)),  not opposes(penguin,-flies(tweety),C | {C \= default},D),  not opposes(C | {C \= default},D,penguin,-flies(tweety)),  not opposes(penguin,-flies(tweety),default,flies(E | {E \= tweety})),  not opposes(default,flies(E | {E \= tweety}),penguin,-flies(tweety)),  not opposes(penguin,-flies(tweety),F | {F \= default},G),  not opposes(F | {F \= default},G,penguin,-flies(tweety)),  not opposes(penguin,-flies(tweety),default,flies(H | {H \= tweety})),  not opposes(default,flies(H | {H \= tweety}),penguin,-flies(tweety)),  not opposes(penguin,-flies(tweety),I | {I \= default},J),  not opposes(I | {I \= default},J,penguin,-flies(tweety)),  not opposes(penguin,-flies(tweety),default,flies(K | {K \= tweety})),  not opposes(default,flies(K | {K \= tweety}),penguin,-flies(tweety)) }
+
+BINDINGS: 
+A equal penguin 
+B equal -flies(tweety) ? ;
+```
+
+## Abduction over Argumentation
+
+In combination with s(CASP)'s abudctive reasoning, using this library makes it possible to ask questions like "what rule would need to override what other rule in order for this conclusion to be true in this fact scenario?"
 
 ## Not For Deployment
 

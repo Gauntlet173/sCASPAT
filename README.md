@@ -6,7 +6,7 @@ By Jason Morris, for the SMU Centre for Computational Law.
 
 ## s(CASP)
 
-For deatils on s(CASP) [see here](https://gitlab.software.imdea.org/ciao-lang/sCASP).
+For details on s(CASP) [see here](https://gitlab.software.imdea.org/ciao-lang/sCASP).
 
 ## LPDAT
 

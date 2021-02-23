@@ -43,15 +43,29 @@ compromised(Rule,Conclusion) :-
 compromised(Rule,Conclusion) :-
     defeated_by(Rule,Conclusion).
 
-% A rule is disqualified if it defeats itself.
+% A rule is disqualified if it defeats itself through a cycle of rebuttals or refutations (not disqualifications)
 #pred defeated_by_closure(R1,C1,R2,C2) :: 'the conclusion @(C1) from rule @(R1) is defeated by closure by the conclusion @(C2) from rule @(R2)'.
 #pred defeated_by_closure(R,C,R,C) :: 'the conclusion @(C1) from rule @(R1) is self-defeating'.
 
 defeated_by_closure(Rule,Conclusion,Other_Rule,Other_Conclusion) :-
-    defeated_by(Rule,Conclusion,Other_Rule,Other_Conclusion).
+    unsafe_rebutted_by(Rule,Conclusion,Other_Rule,Other_Conclusion).
 defeated_by_closure(Rule,Conclusion,Other_Rule,Other_Conclusion) :-
-    defeated_by(Rule,Conclusion,Third_Rule,Third_Conclusion),
+    refuted_by(Rule,Conclusion,Other_Rule,Other_Conclusion).
+defeated_by_closure(Rule,Conclusion,Other_Rule,Other_Conclusion) :-
+    unsafe_rebutted_by(Rule,Conclusion,Third_Rule,Third_Conclusion),
     defeated_by_closure(Third_Rule,Third_Conclusion,Other_Rule,Other_Conclusion).
+defeated_by_closure(Rule,Conclusion,Other_Rule,Other_Conclusion) :-
+    refuted_by(Rule,Conclusion,Third_Rule,Third_Conclusion),
+    defeated_by_closure(Third_Rule,Third_Conclusion,Other_Rule,Other_Conclusion).
+
+% Defeat by closure checks for chains of rebuttals and refutations, regardless of whether
+% the defeating or rebutting rule is defeated or compromised.
+unsafe_rebutted_by(Rule,Conclusion,Other_Rule,Other_Conclusion) :-
+    according_to(Rule,Conclusion),
+    according_to(Other_Rule,Other_Conclusion),
+    opposes(Rule,Conclusion,Other_Rule,Other_Conclusion),
+    not overrides(Rule,Conclusion,Other_Rule,Other_Conclusion),
+    not overrides(Other_Rule,Other_Conclusion,Rule,Conclusion).
 
 #pred disqualified(Rule,Conclusion) :: 'the conclusion @(Conclusion) from rule @(Rule) is disqualified'.
 
